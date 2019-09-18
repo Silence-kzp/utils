@@ -130,6 +130,7 @@ class List extends Component<ListProps> {
                 that.scrollbar.style.visibility = 'hidden';
             } else {
                 that.scrollbar.style.cssText = `top: ${that.dom.scrollTop}px;`;
+                that.scrollbar.style.visibility = 'visible';
                 thumb.style.cssText = `height: ${Math.max(ratio * 100, 10)}%; top: ${+(that.dom.scrollTop / totalHeight) * 100}%;`;
             }
             // @ts-ignore
