@@ -137,8 +137,9 @@ class List extends Component<ListProps> {
         });
     }
 
-    handleDrag = () => {
+    handleDrag = (e: React.MouseEvent) => {
         if (!this.dom || !this.scrollbar) return;
+        
         let lastPageY: number = 0;
         const that = this;
         const drag = function (e: MouseEvent) {
@@ -153,16 +154,12 @@ class List extends Component<ListProps> {
             document.removeEventListener('mousemove', drag);
             document.removeEventListener('mouseup', stop);
         }
-        this.scrollbar.addEventListener('mousedown', function (e: MouseEvent) {
-            lastPageY = e.pageY;
-            document.addEventListener('mousemove', drag);
-            document.addEventListener('mouseup', stop);
-            return false;
-        });
-    }
-
-    componentDidMount() {
-        this.handleDrag();
+        lastPageY = e.pageY;
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', stop);
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
     }
     
     componentDidUpdate() {
@@ -198,7 +195,7 @@ class List extends Component<ListProps> {
                 onMouseMove={this.handleMove}
                 onScroll={this.handleScroll}> 
                 { $menu } 
-                <span ref={dom => this.scrollbar = dom} className="scrollbar">
+                <span ref={dom => this.scrollbar = dom} className="scrollbar" onMouseDown={this.handleDrag}>
                     <span className="scrollbar-thumb"/>
                 </span>
             </ul> 
