@@ -124,7 +124,7 @@ export function IsEmpty<T>(a: T | T[]): boolean {
  *  @param search 自定义获取部分
  */
 export function GetParam(name: string, search?: string) {
-    const reg = new RegExp(`(^|&|\?)${name}=([^&*](&|$))`);
+    const reg = new RegExp(`(^|&|\\?)${name}=([^&]+(&|$))`);
     const r = decodeURIComponent(search || window.location.search).match(reg);
     if (r !== null) return r[2];
     return null;
