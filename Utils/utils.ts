@@ -129,3 +129,16 @@ export function GetParam(name: string, search?: string) {
     if (r !== null) return r[2];
     return null;
 }
+
+/**
+ *  验证身份证号码
+ *  
+ *  @param idcard  身份证号码
+ */
+export function VerifyIDCard(idcard: string) {
+    const verify = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2];
+    const ids = [1, 0, 'X', 9, 8, 7, 6, 5, 3, 2];
+    const mod = verify.map((r, idx) => r * Number(idcard[idx])).reduce((pre, next) => pre + next, 0) % 11;
+    return ids[mod] === idcard[17];
+}
+
