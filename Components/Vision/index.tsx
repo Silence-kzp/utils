@@ -119,8 +119,7 @@ const calcMaxMin = function (ds: number[],
     imax = (max !== null && max !== undefined)
             ? Math.min(imax, max) : imax;
     if (typeof offset === 'string') {
-        const v = parseInt(offset) / 100.0;
-        const diff = (imax - imin) * v;
+        const diff = (imax - imin) * parseInt(offset) / 100.0;
         imax += diff;
         imin -= diff;
     } else {
@@ -135,14 +134,53 @@ const calcMaxMin = function (ds: number[],
     };
 };
 
+const dottedSerie = function(serie: any, firstValue?: number) {
+    if (serie.type !== 'line' || serie.data.length === 0) return null;
+    const len = serie.data.length;
+    const data = [];
+    for (let i = 0; i < len; i += 1) {
+        const cur = i === 0 ? (serie.data[i] || firstValue) : serie.data[i];
+        if (cur === null) continue;
+
+        let flag = false;
+        for (let j = i + 1; j < len; j += 1) {
+            const next = serie.data[j] || null;
+            if (cur !== null && next !== null) {
+                if (flag) {
+                    data.push([i, cur], [j, next]);
+                    flag = false;
+                    i = j;
+                }
+                break;
+            }
+            if (cur !== null && next === null) {
+                flag = true;
+            }
+        }
+    }
+    return {
+        name: serie.name,
+        type: 'line',
+        smooth: false,
+        connectNulls: true,
+        color: serie.color,
+        itemStyle: {
+            normal: {
+                lineStyle: { type: 'dotted' }
+            }
+        },
+        data,
+    };
+}
+
 const Vision = function (props: any) {
     const echart = useRef<any>();
     let options: { [key: string] : any } = { ...defaultOptions() };
     const isEmpty = (props.xAxis?.data?.length === 0);
 
     if (!isEmpty && !props.loading) {
-        const { grid, xAxis, yAxis, legend } = props;
-        options = merge(options, { grid, xAxis, legend });
+        const { grid, xAxis, yAxis, legend, tooltip } = props;
+        options = merge(options, { grid, xAxis, legend: (legend || {}), tooltip: (tooltip || {}) });
         if (yAxis) {
             if (!Array.isArray(yAxis)) {
                 options.yAxis[0] = merge(options.yAxis[0], yAxis);
@@ -157,15 +195,16 @@ const Vision = function (props: any) {
                 return serie.data.filter((item: any) => item !== null || item !== undefined);
             });
 
-            // 设置图例。去除重名
-            if (!legend || !legend?.data) {
-                options.legend.data = props.series.map((serie: any) => ({ name: serie.name }))
-            }
+            // 用虚线补齐
+            options.series.forEach(function(serie: any) {
+                const newSerie = dottedSerie(serie);
+                if (newSerie) options.series.push(newSerie);
+            });
             
             // 获取最大和最小值
             const datas: any[] = [];
             options.series
-                   .forEach(function (serie: any) {
+                .forEach(function (serie: any) {
                     if (!datas[serie.yAxisIndex || 0]) datas[serie.yAxisIndex || 0] = [];
                     serie.data.forEach(function(item: any) {
                         if (item === null || item === undefined) return;
@@ -181,7 +220,7 @@ const Vision = function (props: any) {
             });
         }
         // 显示tooltip
-        options.tooltip.formatter = function(params: any) {
+        options.tooltip.formatter = options.tooltip.formatter || function(params: any) {
             if (Array.isArray(params) && params.length > 1) {
                 // 过滤重复得serieName
                 const keys: string[] = [];
@@ -204,10 +243,10 @@ const Vision = function (props: any) {
             html += params[0].name;
             html += '</div>'
             params.forEach(function(param: any) {
-                const serieName = props?.formatter.serieNameFormatter
+                const serieName = props?.formatter?.serieNameFormatter
                     ? props?.formatter.serieNameFormatter(param.seriesName, param.dataIndex)
                     : param.seriesName;
-                const value = props?.formatter.valueFormatter
+                const value = props?.formatter?.valueFormatter
                     ? props?.formatter.valueFormatter(param.value)
                     : param.value;
                 if (serieName) {
@@ -230,7 +269,8 @@ const Vision = function (props: any) {
         const datas: any[] = [];
         options.series
                 .forEach((serie: any) => {
-                    if (r.selected[serie.name]) {
+                    const selected = r.selected[serie.name]; 
+                    if (selected !== false) {
                         if (!datas[serie.yAxisIndex || 0]) datas[serie.yAxisIndex || 0] = [];
                         serie.data.forEach(function(item: any) {
                             if (item === null || item === undefined) return;
