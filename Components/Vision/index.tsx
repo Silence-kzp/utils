@@ -134,35 +134,32 @@ const calcMaxMin = function (ds: number[],
     };
 };
 
-const dottedSerie = function(serie: any, firstValue?: number) {
+const dottedSerie = function(serie: any) {
     if (serie.type !== 'line' || serie.data.length === 0) return null;
     const len = serie.data.length;
     const data = [];
+    let flag = false;
     for (let i = 0; i < len; i += 1) {
-        const cur = i === 0 ? (serie.data[i] || firstValue) : serie.data[i];
-        if (cur === null) continue;
-
-        let flag = false;
-        for (let j = i + 1; j < len; j += 1) {
-            const next = serie.data[j] || null;
-            if (cur !== null && next !== null) {
-                if (flag) {
-                    data.push([i, cur], [j, next]);
-                    flag = false;
-                    i = j;
-                }
-                break;
-            }
-            if (cur !== null && next === null) {
-                flag = true;
-            }
+        const cur = serie.data[i];
+        const next =serie.data[i + 1];
+        if (cur !== null && next === null) {
+            // 空标识开始
+            flag = true;
+            data.push([i, cur]);
+        } else if (flag && cur === null && next !== null) {
+            // 空标识结束
+            flag = false;
+            data.push([i + 1, next]);
+        } else if (!flag) {
+            // 不在空值范围内
+            data.push([i, null]);
         }
     }
     return {
         name: serie.name,
         type: 'line',
         smooth: false,
-        connectNulls: true,
+        connectNulls: false,
         color: serie.color,
         itemStyle: {
             normal: {
